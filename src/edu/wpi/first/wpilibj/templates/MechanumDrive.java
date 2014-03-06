@@ -85,6 +85,8 @@ public class MechanumDrive extends IterativeRobot {
     private static final int jsButtonShoot = 1;
     
     private static final double GUIDO_RAISE_POWER = 1;
+    private long time;
+    private long startTime;
     
     
     
@@ -197,6 +199,15 @@ public class MechanumDrive extends IterativeRobot {
             tankDrive(MathUtil.removeJitter(MathUtil.cube(joystickTurn.getY())), MathUtil.removeJitter(MathUtil.cube(joystickDrive.getY())));           
             
             doPTO((joystickDrive.getRawButton(jsButtonWinchDown) ? -0.5 : 0) + (joystickTurn.getRawButton(jsButtonWinchUp) ? 0.5 : 0));            
+        }
+    }
+    public void autonomousInit() {
+        startTime = time = System.currentTimeMillis();
+    }
+    public void autonomousPeriodic() {
+        time = System.currentTimeMillis();
+        if (time - startTime < 3000L) {
+            jesterDrive(1.0, 0, 0, false);
         }
     }
     
