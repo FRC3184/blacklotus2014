@@ -24,7 +24,7 @@ public class MechanumDrive extends IterativeRobot {
     private double previousGyro=0;
     private double previousGyroTime=0;
     private double gyroStartTime=0;
-    private double Speed=0;
+    private double speed=0;
     private Timer gyroTimer = new Timer();
     private boolean gyroCalibrate = false;
       
@@ -36,17 +36,19 @@ public class MechanumDrive extends IterativeRobot {
     private DriverStation m_driverStation;
     private DriverStationLCD m_dsLCD;
       
-    private Joystick joystick_turn;
-    private Joystick joystick_drive;
-    private Joystick joystick_guido;
+    private Joystick joystickTurn;
+    private Joystick joystickDrive;
+    private Joystick joystickGuido;
     
-    private Solenoid s1;
-    private Solenoid s2;
-    private Solenoid s3;
-    private Solenoid s4;
+    private Solenoid sDepressurizeShooter;
+    private Solenoid sPressurizeShooter;
+    private Solenoid sDisablePTO;
+    private Solenoid sEnablePTO;
     
     private Solenoid sGearHigh; 
     private Solenoid sGearLow; 
+    
+    private Solenoid sShooterShoot;
     
     private Relay spike1;
     
@@ -54,7 +56,6 @@ public class MechanumDrive extends IterativeRobot {
     private SpeedController frontRight;
     private SpeedController backRight;
     private SpeedController backLeft;
-    private SpeedController spinGuido;
     private SpeedController raiseGuido;
     
     private boolean highGear = false;
@@ -72,211 +73,147 @@ public class MechanumDrive extends IterativeRobot {
     private Compressor compressor = new Compressor(13,1);
         
     private boolean bShootLast = false;
-    private boolean bShootCurr = false;
     
     private int intShoot = 0;
-    private int jsButtonShoot = 5;
-    private int jsButtonTurbo = 3;
-    private int jsGuidoButton = 3;
-    private int jsButtonGuidoInverse = 1;
-    private int jsButtonPTO = 2;
-    private int jsButtonWinchUp = 1;
-    private int jsButtonWinchDown = 1;
+    
+    private static final int jsButtonPressurize = 2;
+    private static final int jsButtonTurbo = 3;
+    private static final int jsButtonPTO = 2;
+    private static final int jsButtonWinchUp = 1;
+    private static final int jsButtonWinchDown = 1;
+    private static final int jsButtonFullGuidoPower = 6;
+    private static final int jsButtonShoot = 1;
+    
+    private static final double GUIDO_RAISE_POWER = 1;
+    
+    
+    
     
     public MechanumDrive()
     {
  
-        joystick_drive = new Joystick(1);
-        joystick_turn = new Joystick(2);
-        joystick_guido = new Joystick(3);
+        joystickDrive = new Joystick(1);
+        joystickTurn = new Joystick(2);
+        joystickGuido = new Joystick(3);
              
         
         frontLeft = new Talon(2);
-        frontRight = new Talon(3);
-        backRight = new Talon(4);
+        frontRight = new Talon(4);
+        backRight = new Talon(3);
         backLeft = new Talon(1);
-        spinGuido = new Talon(5);
-        raiseGuido = new Talon(6);
+        
+        raiseGuido = new Talon(5);
         
         
-        s1 = new Solenoid(1);
-        s2 = new Solenoid(2);
-        s3 = new Solenoid(3);
-        s4 = new Solenoid(4);
+        sDepressurizeShooter = new Solenoid(1);
+        sPressurizeShooter = new Solenoid(2);
+        sDisablePTO = new Solenoid(3);
+        sEnablePTO = new Solenoid(4);
         
         sGearHigh = new Solenoid(5); 
         sGearLow = new Solenoid(6);
         
+        sShooterShoot = new Solenoid(7);
+                
         
         m_driverStation = DriverStation.getInstance();
         m_dsIO = m_driverStation.getEnhancedIO();
         m_dsLCD = DriverStationLCD.getInstance();
-        
+                 
     }
     
-    public double gyroGet(){
-        double gyroFix = gyroDriftRate*(gyroTimer.get()-previousGyroTime);
-        previousGyroTime=gyroTimer.get();
-        return (gyro.getAngle()-gyroFix);
-    }
-    
-    
-    public void calibrateGyro()
-    {
-        if(gyroCalibrate==false){
-        
-             gyroCalibrate=true;
-             gyroTimer.stop();
-             gyroTimer.reset();
-             gyroTimer.start();
-             previousGyro=gyro.getAngle();
-        }
-        else
-        {
-            if(gyroTimer.get()>5.0)
-            {
-                gyroDriftRate=(gyro.getAngle()-previousGyro)/gyroTimer.get();
-                gyroCalibrate=false;
-                gyroTimer.stop();
-                gyroTimer.reset();
-                gyroTimer.start();
-                previousGyroTime=gyroTimer.get();
-                gyro.reset();
-            }
-        }
-        
-        
-        
-        
-    }
     
     public void robotInit() {
         //calibrateGyro();
         
         compressor.start();
         
-        s2.set(true);
-        s1.set(false);
+        sPressurizeShooter.set(true);
+        sDepressurizeShooter.set(false);
         
-        s4.set(true);
-        s3.set(false);
+        sEnablePTO.set(true);
+        sDisablePTO.set(false);
         
         highGear = false;
         automatic = false;
         sGearLow.set(false);
         sGearHigh.set(true);
-    }
-
-    /**
-     * This function is called periodically during autonomous
-     */
-    public void autonomousPeriodic() {
-
-    }
-
-    
-    public void teleopInit()
-    {
-        //calibrateGyro();
+        
+        //cam = AxisCamera.getInstance();
     }
     
     /**
      * This function is called periodically during operator control
      */
-    public void teleopPeriodic() {
+    public void teleopPeriodic() {        
         double xx;
         double yy;
         double zz;
         double guidoRaise;
-        double raisePwr;
-        double spinPwr;
         nonSuperModeSpeedMult = (m_driverStation.getAnalogIn(1)/6.6) + .5;
         nonSuperModeTurnMult = 1;//(m_ds.getAnalogIn(2)/6.6) + .5;
         
         
-        xx = cube(joystick_drive.getX());
-        yy = cube(joystick_drive.getY());
-        zz = cube(joystick_turn.getX());
-        guidoRaise = cube(joystick_guido.getY());
-        
-        raisePwr = -0.75;//(joystick_guido.getRawAxis(3)+1) / 2;
-        spinPwr = 0.4;//(joystick_drive.getRawAxis(3)+1) / 2;
+        xx = MathUtil.cube(joystickDrive.getX());
+        yy = MathUtil.cube(joystickDrive.getY());
+        zz = MathUtil.cube(joystickTurn.getX());
+        guidoRaise = MathUtil.cube(joystickGuido.getY());
         
         //joystick "jitter" removal
-        if(Math.abs(xx)<.05){
-            xx=0;}
-        if(Math.abs(yy)<.05){
-            yy=0;}
-        if(Math.abs(zz)<.05){
-            zz=0;}
+        xx = MathUtil.removeJitter(xx);
+        yy = MathUtil.removeJitter(yy);
+        zz = MathUtil.removeJitter(zz);
+        guidoRaise = MathUtil.removeJitter(guidoRaise);
         
-        xx = xx * nonSuperModeSpeedMult;
-        yy = yy * nonSuperModeSpeedMult;
-        zz = zz * nonSuperModeTurnMult;
+        xx *= nonSuperModeSpeedMult;
+        yy *= nonSuperModeSpeedMult;
+        zz *= nonSuperModeTurnMult;
         
-        m_dsLCD.println(DriverStationLCD.Line.kUser2, 1, spinPwr + ":" + raisePwr + ":" + guidoRaise);
+        m_dsLCD.println(DriverStationLCD.Line.kUser2, 1, ""+guidoRaise);
         m_dsLCD.println(DriverStationLCD.Line.kUser3, 1, xx + " " + yy + " " + zz);
         m_dsLCD.updateLCD();
-        //m_robotDrive.mecanumDrive_Cartesian(xx, yy, zz, 0); //gyro.getAngle());
-        //m_robotDrive.mecanumDrive_Polar(yy, xx, zz);
         
         
-        // code for quido arms
-        if (joystick_guido.getRawButton(jsGuidoButton)){
-            spinGuido.set(spinPwr * (joystick_guido.getRawButton(jsButtonGuidoInverse) ? 1 : -1));
+        raiseGuido(guidoRaise);
+        
+        //solenoid code for shooter
+        pressurizeShooter(joystickGuido.getRawButton(jsButtonPressurize));
+        
+        sShooterShoot.set(joystickGuido.getRawButton(jsButtonShoot));
+       
+        boolean enablePTO = joystickTurn.getRawButton(jsButtonPTO);
+        
+        //code for power takeoff
+        ptoSwitch(enablePTO);
+        
+        //tramission shifting
+        highGear = transmission(highGear, joystickDrive.getRawButton(jsButtonTurbo));
+        
+        if (!enablePTO) {
+            jesterDrive(-zz, yy, -xx, highGear);
         }
-        else{
-            spinGuido.set(0);
+        else {
+            //Tank drive
+            tankDrive(MathUtil.removeJitter(MathUtil.cube(joystickTurn.getY())), MathUtil.removeJitter(MathUtil.cube(joystickDrive.getY())));           
+            
+            doPTO((joystickDrive.getRawButton(jsButtonWinchDown) ? -0.5 : 0) + (joystickTurn.getRawButton(jsButtonWinchUp) ? 0.5 : 0));            
         }
-        
-        raiseGuido.set(-guidoRaise * raisePwr);
-        
-        //solenoid code for shooter       
-        bShootCurr = joystick_guido.getRawButton(jsButtonShoot);
-        if (bShootCurr != bShootLast)
+    }
+    
+       
+    private void raiseGuido(double amt) {
+        if (joystickGuido.getRawButton(jsButtonFullGuidoPower))
         {
-            if (bShootCurr)
-            {
-                intShoot = 1 - intShoot;
-            }
-        }
-        if (bShootCurr)
-        {
-            intShoot=1;
+            //raiseGuido.set((amt / Math.abs(amt)) * GUIDO_RAISE_POWER);
+            raiseGuido.set(amt * GUIDO_RAISE_POWER);
         }
         else
         {
-            intShoot=0;
+            raiseGuido.set(amt * GUIDO_RAISE_POWER * 0.5);
         }
-        
-        bShootLast=bShootCurr;
-        if (intShoot != 0)
-        {
-            s1.set(false);
-            s2.set(true);
-        } 
-        else 
-        {
-            s1.set(true);
-            s2.set(false);
-        }
-        
-        boolean enablePTO = joystick_turn.getRawButton(jsButtonPTO);
-        
-        //code for power takeoff
-        if (enablePTO)
-        {
-            s3.set(false);
-            s4.set(true);
-        } 
-        else 
-        {
-            s3.set(true);
-            s4.set(false);
-        }
-        
-        //tramission shifting
-        boolean turbo = joystick_drive.getRawButton(jsButtonTurbo);        
+    }
+    
+    private boolean transmission(boolean highGear, boolean turbo) {
         if(highGear) {
             if((automatic && averageSpeed < downShiftSpeed) ||
                     (!automatic && turbo)){
@@ -301,19 +238,50 @@ public class MechanumDrive extends IterativeRobot {
             sGearHigh.set(false);
             sGearLow.set(true);
         }
+        return highGear;
+    }
+    
+    private void pressurizeShooter(boolean current) {
+        if (current != bShootLast)
+        {
+            if (current)
+            {
+                intShoot = 1 - intShoot;
+            }
+        }
+        if (current)
+        {
+            intShoot=1;
+        }
+        else
+        {
+            intShoot=0;
+        }
         
-        if (!enablePTO) {
-            jesterDrive(yy, -xx, zz, highGear);
+        bShootLast=current;
+        if (intShoot != 0)
+        {
+            sDepressurizeShooter.set(false);
+            sPressurizeShooter.set(true);
+        } 
+        else 
+        {
+            sDepressurizeShooter.set(true);
+            sPressurizeShooter.set(false);
         }
-        else {
-            //Tank drive
-            frontLeft.set(cube(joystick_turn.getY()*-1));
-            frontRight.set(cube(joystick_drive.getY()));
-            
-            double speed = (joystick_drive.getRawButton(jsButtonWinchDown) ? -0.5 : 0) + (joystick_turn.getRawButton(jsButtonWinchUp) ? 0.5 : 0);
-            backLeft.set(speed*-1);
-            backRight.set(speed);
-        }
+    }
+    private void ptoSwitch(boolean enable) {
+        sDisablePTO.set(!enable);
+        sEnablePTO.set(enable);
+    }
+    
+    private void doPTO(double speed) {
+        backLeft.set(speed*-1);
+        backRight.set(speed);
+    }
+    private void tankDrive(double left, double right) {
+        frontLeft.set(left*-1);
+        frontRight.set(right);
     }
     
     public void jesterDrive(double joyX, double joyY, double joyZ, boolean highGear) {
@@ -328,13 +296,13 @@ public class MechanumDrive extends IterativeRobot {
         double leftRearX;
         
         double reductionFactor = 0;
-        if (!compareDouble(joyX, 0.0, 0.01)) {
+        if (!MathUtil.compareDouble(joyX, 0.0, 0.01)) {
             reductionFactor++;            
         }
-        if (!compareDouble(joyY, 0.0, 0.01)) {
+        if (!MathUtil.compareDouble(joyY, 0.0, 0.01)) {
             reductionFactor++;            
         }
-        if (!compareDouble(joyZ, 0.0, 0.01)) {
+        if (!MathUtil.compareDouble(joyZ, 0.0, 0.01)) {
             reductionFactor++;            
         }
                 
@@ -420,14 +388,6 @@ public class MechanumDrive extends IterativeRobot {
 //        m_dsLCD.println(DriverStationLCD.Line.kUser4, 1, ""+joyX+ " " + joyY + " " + joyZ);
         m_dsLCD.println(DriverStationLCD.Line.kUser5, 1, "" + dFrontLeft + ":" + dBackLeft + ":"+ dFrontRight + ":"+ dBackRight);
         m_dsLCD.updateLCD();
-    }
-    
-    private boolean compareDouble(double d1, double d2, double diff) {
-        return Math.abs(d1-d2) < diff;
-    }
-
-    private double cube(double d) {
-        return d*d*d;
     }
     
 }
