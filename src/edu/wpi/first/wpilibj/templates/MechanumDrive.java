@@ -49,6 +49,7 @@ public class MechanumDrive extends IterativeRobot {
     private Solenoid sGearLow; 
     
     private Solenoid sShooterShoot;
+    private Solenoid sShooterNoShoot;
     
     private Relay spike1;
     
@@ -107,15 +108,16 @@ public class MechanumDrive extends IterativeRobot {
         raiseGuido = new Talon(5);
         
         
-        sDepressurizeShooter = new Solenoid(1);
-        sPressurizeShooter = new Solenoid(2);
-        sDisablePTO = new Solenoid(3);
-        sEnablePTO = new Solenoid(4);
+        sDepressurizeShooter = new Solenoid(7);
+        sPressurizeShooter = new Solenoid(8);
+        sDisablePTO = new Solenoid(2);
+        sEnablePTO = new Solenoid(1);
         
-        sGearHigh = new Solenoid(5); 
-        sGearLow = new Solenoid(6);
+        sGearHigh = new Solenoid(6); 
+        sGearLow = new Solenoid(5);
         
-        sShooterShoot = new Solenoid(7);
+        sShooterShoot = new Solenoid(4);
+        sShooterNoShoot = new Solenoid(3);
                 
         
         m_driverStation = DriverStation.getInstance();
@@ -182,6 +184,7 @@ public class MechanumDrive extends IterativeRobot {
         pressurizeShooter(joystickGuido.getRawButton(jsButtonPressurize));
         
         sShooterShoot.set(joystickGuido.getRawButton(jsButtonShoot));
+        sShooterNoShoot.set(!joystickGuido.getRawButton(jsButtonShoot));
        
         boolean enablePTO = joystickTurn.getRawButton(jsButtonPTO);
         
@@ -192,7 +195,7 @@ public class MechanumDrive extends IterativeRobot {
         highGear = transmission(highGear, joystickDrive.getRawButton(jsButtonTurbo));
         
         if (!enablePTO) {
-            jesterDrive(-zz, yy, -xx, highGear);
+            jesterDrive(zz, xx, -yy, highGear);
         }
         else {
             //Tank drive
