@@ -84,6 +84,8 @@ public class MechanumDrive extends IterativeRobot {
     private static final int jsButtonWinchDown = 1;
     private static final int jsButtonFullGuidoPower = 6;
     private static final int jsButtonShoot = 1;
+    private static final int jsButtonLeftWall = 4;
+    private static final int jsButtonRightWall = 5;
     
     private static final double GUIDO_RAISE_POWER = 1;
     private long time;
@@ -205,13 +207,21 @@ public class MechanumDrive extends IterativeRobot {
         }
     }
     public void autonomousInit() {
+        
         startTime = time = System.currentTimeMillis();
+        ptoSwitch(false);
     }
     public void autonomousPeriodic() {
+        m_dsLCD.println(DriverStationLCD.Line.kUser1, 1, ""+(time - startTime));
         time = System.currentTimeMillis();
+       
         if (time - startTime < 3000L) {
-            jesterDrive(1.0, 0, 0, false);
+            jesterDrive(0, 0, 0.5, false);
         }
+        else {
+            jesterDrive(0,0,0,false);
+        }
+        m_dsLCD.updateLCD();
     }
     
        
@@ -290,8 +300,8 @@ public class MechanumDrive extends IterativeRobot {
     }
     
     private void doPTO(double speed) {
-        backLeft.set(speed*-1);
-        backRight.set(speed);
+        backLeft.set(speed*-1 * (!joystickDrive.getRawButton(jsButtonLeftWall) ? 1 : 0));
+        backRight.set(speed * (!joystickDrive.getRawButton(jsButtonRightWall) ? 1 : 0));
     }
     private void tankDrive(double left, double right) {
         frontLeft.set(left*-1);
