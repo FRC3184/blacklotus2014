@@ -197,7 +197,7 @@ public class MechanumDrive extends IterativeRobot {
         highGear = transmission(highGear, joystickDrive.getRawButton(jsButtonTurbo));
         
         if (!enablePTO) {
-            jesterDrive(zz, xx, -yy, highGear);
+            jesterDrive(xx, yy, zz, highGear);
         }
         else {
             //Tank drive
@@ -216,7 +216,7 @@ public class MechanumDrive extends IterativeRobot {
         time = System.currentTimeMillis();
        
         if (time - startTime < 3000L) {
-            jesterDrive(0, 0, 0.5, false);
+            jesterDrive(0, 0.5, 0, false);
         }
         else {
             jesterDrive(0,0,0,false);
@@ -344,8 +344,8 @@ public class MechanumDrive extends IterativeRobot {
         }
         
         rightRearX = -leftFrontX;
-        rightFrontX = leftFrontX;
-        leftRearX = -leftFrontX;
+        rightFrontX = -leftFrontX;
+        leftRearX = leftFrontX;
         
         double rightRearY;
         double rightFrontY;
