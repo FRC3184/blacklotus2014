@@ -90,6 +90,7 @@ public class MechanumDrive extends IterativeRobot {
     private static final double GUIDO_RAISE_POWER = 1;
     private long time;
     private long startTime;
+    private boolean didAutoShoot = false;
     
     
     
@@ -110,10 +111,10 @@ public class MechanumDrive extends IterativeRobot {
         raiseGuido = new Talon(5);
         
         
-        sDepressurizeShooter = new Solenoid(7);
-        sPressurizeShooter = new Solenoid(8);
-        sDisablePTO = new Solenoid(2);
-        sEnablePTO = new Solenoid(1);
+        sDepressurizeShooter = new Solenoid(1);
+        sPressurizeShooter = new Solenoid(2);
+        sDisablePTO = new Solenoid(8);
+        sEnablePTO = new Solenoid(7);
         
         sGearHigh = new Solenoid(6); 
         sGearLow = new Solenoid(5);
@@ -197,7 +198,7 @@ public class MechanumDrive extends IterativeRobot {
         highGear = transmission(highGear, joystickDrive.getRawButton(jsButtonTurbo));
         
         if (!enablePTO) {
-            jesterDrive(xx, yy, zz, highGear);
+            jesterDrive(-zz, -yy, xx, highGear);
         }
         else {
             //Tank drive
@@ -212,14 +213,19 @@ public class MechanumDrive extends IterativeRobot {
         ptoSwitch(false);
     }
     public void autonomousPeriodic() {
-        m_dsLCD.println(DriverStationLCD.Line.kUser1, 1, ""+(time - startTime));
         time = System.currentTimeMillis();
+        long tDiff = time - startTime;
+        
        
-        if (time - startTime < 3000L) {
+        
+        if (tDiff < 3000L) {
             jesterDrive(0, 0.5, 0, false);
         }
         else {
             jesterDrive(0,0,0,false);
+            if (!didAutoShoot) {
+               
+            }
         }
         m_dsLCD.updateLCD();
     }
@@ -371,22 +377,22 @@ public class MechanumDrive extends IterativeRobot {
         String ln5 = "";
         
         //Modify values here
-        if (highGear) {
-            
-            dBackRight *= 1;
-            dBackLeft *= 1;
-            
-            dFrontLeft *= (backHigh / frontHigh);
-            dFrontRight *= (backHigh / frontHigh);
-        }
-        else {
-                       
-            dBackRight *= 1;
-            dBackLeft *= 1;
-            
-            dFrontRight *= (backLow / frontLow);
-            dFrontLeft *= (backLow / frontLow);
-        }
+//        if (highGear) {
+//            
+//            dBackRight *= 1;
+//            dBackLeft *= 1;
+//            
+//            dFrontLeft *= (backHigh / frontHigh);
+//            dFrontRight *= (backHigh / frontHigh);
+//        }
+//        else {
+//                       
+//            dBackRight *= 1;
+//            dBackLeft *= 1;
+//            
+//            dFrontRight *= (backLow / frontLow);
+//            dFrontLeft *= (backLow / frontLow);
+//        }
         frontLeft.set(dFrontLeft);
         backLeft.set(dBackLeft);
         frontRight.set(dFrontRight);
