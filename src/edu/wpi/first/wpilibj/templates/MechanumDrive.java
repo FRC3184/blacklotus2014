@@ -377,22 +377,22 @@ public class MechanumDrive extends IterativeRobot {
         String ln5 = "";
         
         //Modify values here
-//        if (highGear) {
-//            
-//            dBackRight *= 1;
-//            dBackLeft *= 1;
-//            
-//            dFrontLeft *= (backHigh / frontHigh);
-//            dFrontRight *= (backHigh / frontHigh);
-//        }
-//        else {
-//                       
-//            dBackRight *= 1;
-//            dBackLeft *= 1;
-//            
-//            dFrontRight *= (backLow / frontLow);
-//            dFrontLeft *= (backLow / frontLow);
-//        }
+        if (highGear) {
+            
+            dBackRight *= 1;
+            dBackLeft *= 1;
+            
+            dFrontLeft *= (backHigh / frontHigh);
+            dFrontRight *= (backHigh / frontHigh);
+        }
+        else {
+                       
+            dBackRight *= 1;
+            dBackLeft *= 1;
+            
+            dFrontRight *= (backLow / frontLow);
+            dFrontLeft *= (backLow / frontLow);
+        }
         frontLeft.set(dFrontLeft);
         backLeft.set(dBackLeft);
         frontRight.set(dFrontRight);
